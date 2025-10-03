@@ -25,7 +25,7 @@ function App() {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", background: "#f4f6f9", minHeight: "100vh", padding: "40px 20px" }}>
       <h1 style={{ fontSize: "2rem", marginBottom: "20px", color: "#333" }}>
-        YAML Validator & Auto-Fix
+        YAML Validator
       </h1>
 
       <div style={{ width: "100%", maxWidth: "800px", margin: "0 auto", border: "1px solid #ddd", borderRadius: "8px", overflow: "hidden" }}>
