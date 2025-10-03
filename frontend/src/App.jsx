@@ -1,111 +1,71 @@
-// frontend/src/App.jsx
-import { useState } from "react";
-import Editor from "@monaco-editor/react";
+import React, { useState } from "react";
+import CodeMirror from "@uiw/react-codemirror";
+import { yaml } from "@codemirror/lang-yaml";
+import { oneDark } from "@codemirror/theme-one-dark";
+import { lineNumbers } from "@codemirror/view";  // 👈 import
 
-export default function App() {
-  const [yamlText, setYamlText] = useState(`# paste your YAML here\n`);
-  const [fixedYaml, setFixedYaml] = useState("");
-  const [errors, setErrors] = useState([]);
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
+function App() {
+  const [yamlCode, setYamlCode] = useState("");
+  const [result, setResult] = useState(null);
 
-  async function validate() {
-    setLoading(true);
-    setErrors([]);
-    setMessage("");
-    setFixedYaml("");
-
+  const validateYaml = async () => {
     try {
-      const resp = await fetch("http://localhost:4000/validate", {
+      const response = await fetch("http://localhost:4000/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ yaml: yamlText }),
+        body: JSON.stringify({ yaml: yamlCode }),
       });
-      const data = await resp.json();
-      if (data.valid) {
-        setFixedYaml(data.fixedYaml || "");
-        setMessage(data.message || "Valid YAML");
-      } else {
-        setErrors(data.errors || ["Unknown parsing error"]);
-      }
-    } catch (e) {
-      setErrors([e.message || String(e)]);
-    } finally {
-      setLoading(false);
+      const data = await response.json();
+      setResult(data);
+    } catch (err) {
+      console.error(err);
     }
-  }
-
-  function applyFixed() {
-    setYamlText(fixedYaml);
-    setFixedYaml("");
-    setMessage("Applied fixed YAML to editor");
-  }
+  };
 
   return (
-    <div style={{ maxWidth: 1000, margin: "20px auto", fontFamily: "Arial, sans-serif" }}>
-      <h1>YAML Validator & Fixer</h1>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", background: "#f4f6f9", minHeight: "100vh", padding: "40px 20px" }}>
+      <h1 style={{ fontSize: "2rem", marginBottom: "20px", color: "#333" }}>
+        YAML Validator & Auto-Fix
+      </h1>
 
-      <label><strong>Input YAML</strong></label>
-      <Editor
-        height="300px"
-        defaultLanguage="yaml"
-        value={yamlText}
-        onChange={(value) => setYamlText(value || "")}
-        options={{
-          lineNumbers: "on",
-          fontSize: 14,
-          minimap: { enabled: false },
-          scrollBeyondLastLine: false,
-        }}
-      />
-
-      <div style={{ marginTop: 10 }}>
-        <button onClick={validate} disabled={loading}>
-          {loading ? "Validating..." : "Validate & Fix"}
-        </button>
+      <div style={{ width: "100%", maxWidth: "800px", margin: "0 auto", border: "1px solid #ddd", borderRadius: "8px", overflow: "hidden" }}>
+        <CodeMirror
+          value={yamlCode}
+          height="500px"
+          extensions={[
+            yaml(),
+            lineNumbers(),   // 👈 continuous line numbers enabled
+          ]}
+          theme={oneDark}
+          onChange={(value) => setYamlCode(value)}
+        />
       </div>
 
-      {message && <div style={{ marginTop: 12, color: "green" }}>{message}</div>}
+      <button
+        onClick={validateYaml}
+        style={{
+          marginTop: "20px",
+          padding: "12px 25px",
+          fontSize: "1rem",
+          fontWeight: "bold",
+          backgroundColor: "#007bff",
+          color: "white",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+        }}
+      >
+        Validate & Fix
+      </button>
 
-      {errors.length > 0 && (
-        <div style={{ marginTop: 12, color: "#b00020" }}>
-          <h3>Errors</h3>
-          <ul>
-            {errors.map((e, i) => (
-              <li key={i}>
-                <pre style={{ whiteSpace: "pre-wrap" }}>{e}</pre>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {fixedYaml && (
-        <div style={{ marginTop: 12 }}>
-          <h3>Fixed YAML</h3>
-          <Editor
-            height="250px"
-            defaultLanguage="yaml"
-            value={fixedYaml}
-            options={{
-              readOnly: true,
-              lineNumbers: "on",
-              fontSize: 14,
-              minimap: { enabled: false },
-            }}
-          />
-          <div style={{ marginTop: 8 }}>
-            <button onClick={applyFixed}>Use this fixed YAML in editor</button>
-            <a
-              style={{ marginLeft: 12 }}
-              href={`data:text/yaml;charset=utf-8,${encodeURIComponent(fixedYaml)}`}
-              download="fixed.yaml"
-            >
-              Download fixed.yaml
-            </a>
-          </div>
+      {result && (
+        <div style={{ marginTop: "25px", padding: "20px", width: "100%", maxWidth: "800px", margin: "0 auto", border: "1px solid #ddd", borderRadius: "8px", background: "#fff", fontFamily: "monospace", whiteSpace: "pre-wrap", textAlign: "left" }}>
+          <strong>Result:</strong>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
         </div>
       )}
     </div>
   );
 }
+
+export default App;
